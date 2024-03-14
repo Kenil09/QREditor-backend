@@ -1,0 +1,31 @@
+export const STATUS_CODES = {
+  SUCCESS: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  CONFLICT: 409,
+  NOT_FOUND: 404,
+  UNPROCESSABLE_ENTITY: 422,
+  INTERNAL_SERVER_ERROR: 500,
+  NOT_IMPLEMENTED: 501,
+};
+
+export const RESPONSE_MESSAGES = {
+  SUCCESS: "Success",
+  created: (resource) => `${resource} created successfully`,
+  updated: (resource) => `${resource} updated successfully`,
+  deleted: (resource) => `${resource} deleted successfully`,
+  not_found: (resource) => `${resource} not found`,
+  ACCEPTED: "Accepted",
+  NO_CONTENT: "No Content",
+  BAD_REQUEST: "Bad Request",
+  UNAUTHORIZED: "Unauthorized",
+  FORBIDDEN: "Forbidden",
+  CONFLICT: "Conflict",
+  UNPROCESSABLE_ENTITY: "Unprocessable Entity",
+  INTERNAL_SERVER_ERROR: "Internal Server Error",
+  NOT_IMPLEMENTED: "Not Implemented",
+};
