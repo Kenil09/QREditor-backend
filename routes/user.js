@@ -18,7 +18,7 @@ router.post("/register", async (req, res) => {
         .json({ message: error.message });
     }
 
-    const user = new User(value);
+    const user = new User({...value, provider: "local", role: 'user'});
     await user.save();
     res
       .status(201)
