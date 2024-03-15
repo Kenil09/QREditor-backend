@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import bcrypt from "bcrypt";
+import { hashPassword } from "../../utils/password.js";
 
 const userSchema = new Schema(
   {
@@ -25,15 +25,23 @@ const userSchema = new Schema(
       enum: ["user", "admin"],
       default: "user",
     },
+    provider: {
+      type: String,
+      enum: ['google', 'facebook', 'local'],
+      required: [true, 'Provider is required'],
+    },
+    userProviderId: {
+      type: String,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 8);
+userSchema.pre('save', async function (next) {
+  if (this.isModified('password')) {
+    this.password = await hashPassword(this.password);
   }
   next();
 });

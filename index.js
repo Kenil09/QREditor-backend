@@ -4,14 +4,16 @@ import connect from "./db/connect.js";
 import cors from "cors";
 import userRoute from "./routes/user.js";
 import barcodeRoute from "./routes/barcode.js";
+import passportSetup from './utils/passport.js';
 import "dotenv/config";
 
 const app = express();
 
+connect();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
-connect();
+passportSetup(app);
 
 const port = process.env.PORT || 3000;
 
