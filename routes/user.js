@@ -24,7 +24,9 @@ router.post("/register", async (req, res) => {
       .status(201)
       .json({ message: RESPONSE_MESSAGES.created("User"), user: user._id });
   } catch (error) {
-    console.log("register ", error.message);
+    if (error.code === 11000) {
+      return res.status(400).json({ message: RESPONSE_MESSAGES.ALREADY_EXISTS })
+    }
     res
       .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
       .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
