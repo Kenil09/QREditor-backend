@@ -33,4 +33,18 @@ router.get('/login/status', async (req, res) => {
   }
 });
 
+router.get('/logout', async (req, res) => {
+  try {
+    req.logOut(error => {
+      if (error) throw error;
+      return res.status(200).end();
+      // res.redirect(process.env.FRONTEND_LOGIN_FAILURE_URL!);
+    });
+  } catch (error) {
+    console.log('Error in logout => ', error.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 export default router;

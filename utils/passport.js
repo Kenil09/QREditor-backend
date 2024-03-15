@@ -8,7 +8,6 @@ import { comparePasswords } from './password.js';
 import MongoStore from 'connect-mongo';
 
 export default (app) => {
-  app.use(cookiParser());
   // session basic setup
   app.use(
     session({
@@ -30,8 +29,8 @@ export default (app) => {
       cookie: {
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 24, // 24 hours
-        sameSite: 'none',
-        secure: true,
+        // sameSite: 'none',
+        // secure: true,
         /* this is for https sites, only allow in production 
          can be done environment specific by following snippet
          if (app.get('env') === 'production') {
