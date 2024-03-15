@@ -51,4 +51,12 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
+export const checkIsAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    next();
+  } else {
+    return res.status(401).json({ message: 'Unauthorzed to perform action', code: 'UNAUTHORIZED' });
+  }
+};
+
 export { verifyUser, verifyAdmin };

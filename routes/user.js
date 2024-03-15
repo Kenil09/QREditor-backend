@@ -7,6 +7,7 @@ import { verifyAdmin } from "../middleware/auth.js";
 import passport from "passport";
 
 const router = express.Router();
+const env = process.env;
 
 router.post("/register", async (req, res) => {
   try {
@@ -30,7 +31,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/admin", verifyAdmin, async (req, res) => {
+router.post("/admin", async (req, res) => {
   try {
     const { value, error } = registerSchema.validate(req.body);
     if (error) {
@@ -39,7 +40,7 @@ router.post("/admin", verifyAdmin, async (req, res) => {
         .json({ message: error.message });
     }
 
-    const user = new User({ ...value, role: "admin" });
+    const user = new User({ ...value, role: "admin", provider: "local" });
     await user.save();
     res
       .status(STATUS_CODES.CREATED)
@@ -63,17 +64,18 @@ router.post("/login", function (req, res, next) {
     }
     if (!user) {
       return res.redirect(
-        `${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}`
+        `${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}`
       );
     }
     req.logIn(user, (err) => {
       if (err) {
         return next(err);
       }
-      // return res.status(200).end();
-      return res.redirect(
-        `${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`
-      );
+      console.log('user => ', user);
+      return res.status(200).end();
+      // return res.redirect(
+      //   `${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`
+      // );
     });
   })(req, res, next);
 });
