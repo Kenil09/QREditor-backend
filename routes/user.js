@@ -1,11 +1,10 @@
 // create user register route
 import express from "express";
 import User from "../db/models/User.js";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { registerSchema } from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import { verifyAdmin } from "../middleware/auth.js";
+import passport from "passport";
 
 const router = express.Router();
 
@@ -53,35 +52,30 @@ router.post("/admin", verifyAdmin, async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email }).lean();
+router.post("/login", function (req, res, next) {
+  passport.authenticate("local", function (error, user, info, status) {
+    if (error) {
+      return next(error);
+    }
+    console.log("info and user", info, user);
+    if (info && info?.message) {
+      return res.status(400).json({ message: info.message });
+    }
     if (!user) {
-      return res
-        .status(STATUS_CODES.NOT_FOUND)
-        .json({ message: RESPONSE_MESSAGES.not_found("User") });
+      return res.redirect(
+        `${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}`
+      );
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res
-        .status(STATUS_CODES.UNAUTHORIZED)
-        .json({ message: RESPONSE_MESSAGES.UNAUTHORIZED });
-    }
-    const jwtConfig = {
-      expiresIn: "2h",
-      issuer: process.env.DOMAIN_URL,
-      audience: process.env.DOMAIN_URL,
-      subject: String(user._id),
-    };
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, jwtConfig);
-    res.status(STATUS_CODES.SUCCESS).json({ token });
-  } catch (error) {
-    console.log("login ", error.message);
-    res
-      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
-      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
-  }
+    req.logIn(user, (err) => {
+      if (err) {
+        return next(err);
+      }
+      // return res.status(200).end();
+      return res.redirect(
+        `${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`
+      );
+    });
+  })(req, res, next);
 });
 
 export default router;

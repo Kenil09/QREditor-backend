@@ -83,6 +83,7 @@ export default (app) => {
       firstName: profile.name?.givenName,
       lastName: profile.name?.familyName,
       provider: profile.provider,
+      role: 'user',
     };
     if (profile.hasOwnProperty('emails') && profile.emails?.length) {
       user.email = profile.emails[0].value;

@@ -9,10 +9,27 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: `${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}` }),
+  passport.authenticate('google', { failureRedirect: `${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}` }),
   (req, res) => {
     if (req.isAuthenticated()) {
-      return res.redirect(`${env.DOMAIN_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`);
+      return res.redirect(`${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`);
     }
   }
 );
+
+router.get('/login/status', async (req, res) => {
+  try {
+    if (req.isAuthenticated()) {
+      return res.status(200).json({ user: req.user });
+    } else {
+      return res
+        .status(401)
+        .json({ message: 'Unauthorzed to perform action', code: 'UNAUTHORIZED' });
+    }
+  } catch (error) {
+    console.log('Error while checking login status', error.message);
+    res.status(500).json({ message: 'internal server error' });
+  }
+});
+
+export default router;

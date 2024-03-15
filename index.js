@@ -4,6 +4,7 @@ import connect from "./db/connect.js";
 import cors from "cors";
 import userRoute from "./routes/user.js";
 import barcodeRoute from "./routes/barcode.js";
+import authRoute from './routes/auth.js';
 import passportSetup from './utils/passport.js';
 import "dotenv/config";
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 });
 app.use("/user", userRoute);
 app.use("/barcode", barcodeRoute);
+app.use('/auth', authRoute)
 
 app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);
