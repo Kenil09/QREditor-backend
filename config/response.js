@@ -19,6 +19,7 @@ export const RESPONSE_MESSAGES = {
   updated: (resource) => `${resource} updated successfully`,
   deleted: (resource) => `${resource} deleted successfully`,
   not_found: (resource) => `${resource} not found`,
+  ALREADY_EXISTS: "User is already registered",
   ACCEPTED: "Accepted",
   NO_CONTENT: "No Content",
   BAD_REQUEST: "Bad Request",
@@ -28,4 +29,5 @@ export const RESPONSE_MESSAGES = {
   UNPROCESSABLE_ENTITY: "Unprocessable Entity",
   INTERNAL_SERVER_ERROR: "Internal Server Error",
   NOT_IMPLEMENTED: "Not Implemented",
+  BARCODE_ALREADY_APPROVED: "Barcode already approved",
 };

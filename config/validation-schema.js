@@ -10,3 +10,8 @@ export const registerSchema = Joi.object({
 export const bulkBarcodeCreateSchema = Joi.object({
   amount: Joi.number().min(1).max(500).required(),
 });
+
+export const assignLink = Joi.object({
+  user: Joi.string().required(),
+  link: Joi.string().required(),
+});

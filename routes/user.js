@@ -9,6 +9,7 @@ import passport from "passport";
 const router = express.Router();
 const env = process.env;
 
+// register user
 router.post("/register", async (req, res) => {
   try {
     const { value, error } = registerSchema.validate(req.body);
@@ -33,7 +34,8 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post("/admin", async (req, res) => {
+// create admin only allowed by admin
+router.post("/admin", verifyAdmin, async (req, res) => {
   try {
     const { value, error } = registerSchema.validate(req.body);
     if (error) {
@@ -55,6 +57,7 @@ router.post("/admin", async (req, res) => {
   }
 });
 
+// login user
 router.post("/login", function (req, res, next) {
   passport.authenticate("local", function (error, user, info, status) {
     if (error) {

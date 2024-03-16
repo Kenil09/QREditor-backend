@@ -29,10 +29,4 @@ app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);
 });
 
-app._router.stack.forEach(function (r) {
-  if (r.route && r.route.path) {
-    console.log(r.route.path);
-  }
-});
-
 export default app;
