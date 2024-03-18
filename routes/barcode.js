@@ -7,6 +7,7 @@ import { readBarcodesFromImageFile } from "zxing-wasm";
 import upload from "../utils/uploadToS3.js";
 import { verifyAdmin, verifyUser } from "../middleware/auth.js";
 import User from "../db/models/User.js";
+import ObjectsToCsv from "objects-to-csv";
 
 const router = express.Router();
 
@@ -31,9 +32,10 @@ router.post("/", verifyAdmin, async (req, res) => {
       barcodeData.push({ link: barcodeLink });
     }
     const barCodes = await Barcode.insertMany(barcodeData);
+    const csv = await (new ObjectsToCsv(barCodes.map((barcode) => ({ link: barcode.link })))).toString();
     res
       .status(STATUS_CODES.CREATED)
-      .json({ message: RESPONSE_MESSAGES.created("Barcodes"), barcodes: barCodes.map((m) => m.link) });
+      .json({ message: RESPONSE_MESSAGES.created("Barcodes"), barCodes, barcodeCSV: csv });
   } catch (error) {
     console.log("Bulk barcode create error ", error.message);
     res
@@ -60,9 +62,12 @@ router.get("/", verifyAdmin, async (req, res) => {
       filter.approved = query.approved === "true";
     }
 
-    const barcodes = await Barcode.find(filter).limit(limit).skip(skip).lean();
+    const barCodes = await Barcode.find(filter).limit(limit).skip(skip).lean();
+
+    // Get count of total barcode
+    const totalBarcodes = await Barcode.countDocuments(filter);
     
-    res.status(STATUS_CODES.SUCCESS).json({ barcodes });
+    res.status(STATUS_CODES.SUCCESS).json({ barCodes, total: totalBarcodes });
   } catch (error) {
     console.log("Error while fetching barcodes", error.message);
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
@@ -102,7 +107,7 @@ router.get("/:id/:mode", verifyAdmin, async (req, res) => {
     }
     barcode.isActive = mode === "enable";
     await barcode.save();
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode") });
+    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
     console.log("Error while enabling/disabling barcode", error.message);
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
@@ -110,7 +115,7 @@ router.get("/:id/:mode", verifyAdmin, async (req, res) => {
 })
 
 // Approve barcode
-router.get("/:id/approve", verifyAdmin, async (req, res) => {
+router.put("/:id/approve", verifyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const barcode = await Barcode.findById(id);
@@ -121,7 +126,8 @@ router.get("/:id/approve", verifyAdmin, async (req, res) => {
       return res.status(STATUS_CODES.BAD_REQUEST).json({ message: RESPONSE_MESSAGES.BARCODE_ALREADY_APPROVED })
     }
     barcode.approved = true;
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode") });
+    await barcode.save();
+    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
     console.log('Error while approving barcode', error.message);
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
@@ -129,7 +135,7 @@ router.get("/:id/approve", verifyAdmin, async (req, res) => {
 })
 
 // Upload barcode images and link it to the respective records
-router.post("/upload", verifyAdmin, multer().array("image"), async (req, res) => {
+router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
   try {
     const readOption = {
       tryHarder: true,
