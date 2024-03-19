@@ -38,7 +38,7 @@ router.get('/logout', async (req, res) => {
     req.logOut(error => {
       if (error) throw error;
       return res.status(200).end();
-      // res.redirect(process.env.FRONTEND_LOGIN_FAILURE_URL!);
+      // return res.status(200).redirect(`${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}`);
     });
   } catch (error) {
     console.log('Error in logout => ', error.message);
