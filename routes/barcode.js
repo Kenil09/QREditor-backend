@@ -137,7 +137,7 @@ router.put("/:id/approve", verifyAdmin, async (req, res) => {
 // Upload barcode images and link it to the respective records
 router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
   try {
-    const readOption = {
+        const readOption = {
       tryHarder: true,
       formats: ["QRCode"],
       maxNumberOfSymbols: 1,
@@ -155,7 +155,7 @@ router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
         arrayBufferView,
         readOption
       );
-
+      
       if (imageData.length) {
         const link = imageData[0].text;
         const barcode = await Barcode.findOne({ link });
@@ -211,7 +211,7 @@ router.post("/assign/user", verifyUser, async (req, res) => {
     if (!user) {
       return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("User") });
     }
-    const barcode = await Barcode.findOne({ link: value.link });
+    const barcode = await Barcode.findById(value.link);
     if (!barcode) {
       return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("QR Code") });
     }

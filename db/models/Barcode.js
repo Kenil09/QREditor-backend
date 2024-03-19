@@ -2,6 +2,9 @@ import { Schema, model } from "mongoose";
 
 const barcodeSchema = new Schema(
   {
+    name: {
+      type: String,
+    },
     link: {
       type: String,
       unique: true,

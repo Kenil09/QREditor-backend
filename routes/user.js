@@ -5,6 +5,7 @@ import { registerSchema } from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import { verifyAdmin } from "../middleware/auth.js";
 import passport from "passport";
+import Barcode from "../db/models/Barcode.js";
 
 const router = express.Router();
 const env = process.env;
@@ -21,6 +22,14 @@ router.post("/register", async (req, res) => {
 
     const user = new User({...value, provider: "local", role: 'user'});
     await user.save();
+
+    if (value.link) {
+      const link = await Barcode.findById(value.link);
+      if (link) {
+        link.user = user._id;
+        await link.save();
+      }
+    }
     res
       .status(201)
       .json({ message: RESPONSE_MESSAGES.created("User"), user: user._id });
