@@ -15,6 +15,7 @@ export const STATUS_CODES = {
 
 export const RESPONSE_MESSAGES = {
   SUCCESS: "Success",
+  success: (resource) => `${resource} fetched successfully`,
   created: (resource) => `${resource} created successfully`,
   updated: (resource) => `${resource} updated successfully`,
   deleted: (resource) => `${resource} deleted successfully`,

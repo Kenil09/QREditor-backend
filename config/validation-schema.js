@@ -16,3 +16,9 @@ export const assignLink = Joi.object({
   user: Joi.string().required(),
   link: Joi.string().required(),
 });
+
+export const schema =Joi.object({
+  name: Joi.string().required(),
+  link: Joi.string().required(),
+  type: Joi.string().valid('image', 'pdf', 'link', 'text').required(),
+})

@@ -25,6 +25,15 @@ const barcodeSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    storedInfo: {
+      infoType: {
+        type: String,
+        enum: ['image', 'link', 'phoneNumber', 'pdf']
+      },
+      link: {
+        type: String,
+      },
+    }
   },
   {
     timestamps: true,

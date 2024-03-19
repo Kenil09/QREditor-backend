@@ -1,6 +1,6 @@
 import express from "express";
 import Barcode from "../db/models/Barcode.js";
-import { assignLink, bulkBarcodeCreateSchema } from "../config/validation-schema.js";
+import { assignLink, bulkBarcodeCreateSchema, schema } from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import multer from "multer";
 import { readBarcodesFromImageFile } from "zxing-wasm";
@@ -70,6 +70,67 @@ router.get("/", verifyAdmin, async (req, res) => {
     res.status(STATUS_CODES.SUCCESS).json({ barCodes, total: totalBarcodes });
   } catch (error) {
     console.log("Error while fetching barcodes", error.message);
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// Get barcode list of one user
+router.get("/user/:id", verifyUser, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const barcodes = await Barcode.find({ user: id, isActive: true, approved: true }).lean();
+    if (!barcodes) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode List") });
+    }
+    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.success("Barcode List"), barcodes });
+  } catch (error) {
+    console.log('Error while getting barcode list', error.message);
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+router.put('/:id', verifyUser, multer().any(), async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const { error, value } = schema.validate(req.body);
+    
+    if (error) {
+      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: error.details[0].message });
+    }
+
+    const params = value;
+    let barcode = await Barcode.findById(id); // Retrieve barcode by ID
+    
+    if (!barcode) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    }
+    
+    if (['image', 'pdf'].includes(params.type) && req.files.length > 0 && req.files[0].buffer) {
+      const file = req.files[0];
+      const imageOrPdfUrl = await upload(file?.buffer, file?.originalname, file?.mimetype);
+      barcode.storedInfo = {
+        infoType: params.type,
+        link: imageOrPdfUrl
+      };
+    } else if(params.type === 'link') {
+      barcode.storedInfo = {
+        infoType: 'link',
+        link: params.link
+      };
+    }else if(params.type === 'text') {
+      barcode.storedInfo = {
+        infoType: 'text',
+        link: params.link
+      };
+    }
+    
+    await barcode.save(); // Save updated barcode
+    
+    console.log('updated barcode');
+    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
+  } catch (error) {
+    console.log('Error while updating barcode', error.message);
     return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
