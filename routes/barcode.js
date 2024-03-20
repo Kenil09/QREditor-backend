@@ -1,6 +1,10 @@
 import express from "express";
 import Barcode from "../db/models/Barcode.js";
-import { assignLink, bulkBarcodeCreateSchema, schema } from "../config/validation-schema.js";
+import {
+  assignLink,
+  bulkBarcodeCreateSchema,
+  schema,
+} from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import multer from "multer";
 import { readBarcodesFromImageFile } from "zxing-wasm";
@@ -32,10 +36,14 @@ router.post("/", verifyAdmin, async (req, res) => {
       barcodeData.push({ link: barcodeLink });
     }
     const barCodes = await Barcode.insertMany(barcodeData);
-    const csv = await (new ObjectsToCsv(barCodes.map((barcode) => ({ link: barcode.link })))).toString();
-    res
-      .status(STATUS_CODES.CREATED)
-      .json({ message: RESPONSE_MESSAGES.created("Barcodes"), barCodes, barcodeCSV: csv });
+    const csv = await new ObjectsToCsv(
+      barCodes.map((barcode) => ({ link: barcode.link }))
+    ).toString();
+    res.status(STATUS_CODES.CREATED).json({
+      message: RESPONSE_MESSAGES.created("Barcodes"),
+      barCodes,
+      barcodeCSV: csv,
+    });
   } catch (error) {
     console.log("Bulk barcode create error ", error.message);
     res
@@ -59,18 +67,23 @@ router.get("/", verifyAdmin, async (req, res) => {
       filter.link = query.link;
     }
     if (query.approved) {
-      filter.approved = query.approved === "true";
+      filter.approved = query.approved === "true" ? true : false;
+    }
+    if (query.isActive) {
+      filter.isActive = query.isActive === "true" ? true : false;
     }
 
     const barCodes = await Barcode.find(filter).limit(limit).skip(skip).lean();
 
     // Get count of total barcode
     const totalBarcodes = await Barcode.countDocuments(filter);
-    
+
     res.status(STATUS_CODES.SUCCESS).json({ barCodes, total: totalBarcodes });
   } catch (error) {
     console.log("Error while fetching barcodes", error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -78,76 +91,106 @@ router.get("/", verifyAdmin, async (req, res) => {
 router.get("/user/:id", verifyUser, async (req, res) => {
   try {
     const id = req.params.id;
-    const barcodes = await Barcode.find({ user: id, isActive: true, approved: true }).lean();
+    const barcodes = await Barcode.find({
+      user: id,
+      isActive: true,
+      approved: true,
+    }).lean();
     if (!barcodes) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode List") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode List") });
     }
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.success("Barcode List"), barcodes });
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.success("Barcode List"), barcodes });
   } catch (error) {
-    console.log('Error while getting barcode list', error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    console.log("Error while getting barcode list", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
 
 // Get barcode
-router.get('/qrcode/:id', async (req, res) => {
+router.get("/qrcode/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const barcode = await Barcode.findById(id).lean();
     if (!barcode) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.success("Barcode"), barcode });
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.success("Barcode"), barcode });
   } catch (error) {
-    console.log('Error while getting barcode', error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    console.log("Error while getting barcode", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
-})
+});
 
 // Update barcode info
-router.put('/:id', verifyUser, multer().single('file'), async (req, res) => {
+router.put("/:id", verifyUser, multer().single("file"), async (req, res) => {
   try {
     const id = req.params.id;
 
     const { error, value } = schema.validate(req.body);
-    
+
     if (error) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: error.message });
+      return res
+        .status(STATUS_CODES.BAD_REQUEST)
+        .json({ message: error.message });
     }
     let barcode = await Barcode.findById(id); // Retrieve barcode by ID
-    
+
     if (!barcode) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
-    
-    if (['image', 'pdf'].includes(value.type) && req.file && req.file.buffer) {
+
+    if (["image", "pdf"].includes(value.type) && req.file && req.file.buffer) {
       const file = req.file;
-      const imageOrPdfUrl = await upload(file?.buffer, `/${id}/${file?.originalname}`, file?.mimetype);
+      const imageOrPdfUrl = await upload(
+        file?.buffer,
+        `/${id}/${file?.originalname}`,
+        file?.mimetype
+      );
       if (!imageOrPdfUrl) {
-        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+        return res
+          .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+          .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
       }
       barcode.storedInfo = {
         infoType: value.type,
-        link: imageOrPdfUrl
+        link: imageOrPdfUrl,
       };
-    } else if(value.type === 'link') {
+    } else if (value.type === "link") {
       barcode.storedInfo = {
-        infoType: 'link',
-        link: value.link
+        infoType: "link",
+        link: value.link,
       };
-    } else if(value.type === 'phoneNumber') {
+    } else if (value.type === "phoneNumber") {
       barcode.storedInfo = {
-        infoType: 'phoneNumber',
-        link: value.phoneNumber
+        infoType: "phoneNumber",
+        link: value.phoneNumber,
       };
     }
-    
+
     await barcode.save(); // Save updated barcode
-    
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
+
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
-    console.log('Error while updating barcode', error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    console.log("Error while updating barcode", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
 
@@ -155,18 +198,24 @@ router.put('/:id', verifyUser, multer().single('file'), async (req, res) => {
 router.get("/:link", async (req, res) => {
   try {
     const { link } = req.params;
-    const searchLink = new RegExp(link, 'i');
+    const searchLink = new RegExp(link, "i");
 
-    const barcode = await Barcode.findOne({ link: searchLink }).populate('user').lean();
+    const barcode = await Barcode.findOne({ link: searchLink })
+      .populate("user")
+      .lean();
     if (!barcode) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
     return res.status(STATUS_CODES.SUCCESS).json({ barcode });
   } catch (error) {
     console.log("Error while fetching barcode", error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
-})
+});
 
 // Enable or disable barcode
 router.get("/:id/:mode", verifyAdmin, async (req, res) => {
@@ -177,19 +226,25 @@ router.get("/:id/:mode", verifyAdmin, async (req, res) => {
       return res
         .status(STATUS_CODES.BAD_REQUEST)
         .json({ message: RESPONSE_MESSAGES.BAD_REQUEST });
-    };
+    }
     const barcode = await Barcode.findById(id);
-    if (!barcode)  {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    if (!barcode) {
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
     barcode.isActive = mode === "enable";
     await barcode.save();
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
     console.log("Error while enabling/disabling barcode", error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
-})
+});
 
 // Approve barcode
 router.put("/:id/approve", verifyAdmin, async (req, res) => {
@@ -197,24 +252,32 @@ router.put("/:id/approve", verifyAdmin, async (req, res) => {
     const { id } = req.params;
     const barcode = await Barcode.findById(id);
     if (!barcode) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
     if (barcode.approved) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: RESPONSE_MESSAGES.BARCODE_ALREADY_APPROVED })
+      return res
+        .status(STATUS_CODES.BAD_REQUEST)
+        .json({ message: RESPONSE_MESSAGES.BARCODE_ALREADY_APPROVED });
     }
     barcode.approved = true;
     await barcode.save();
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
-    console.log('Error while approving barcode', error.message);
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+    console.log("Error while approving barcode", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
-})
+});
 
 // Upload barcode images and link it to the respective records
 router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
   try {
-        const readOption = {
+    const readOption = {
       tryHarder: true,
       formats: ["QRCode"],
       maxNumberOfSymbols: 1,
@@ -232,7 +295,7 @@ router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
         arrayBufferView,
         readOption
       );
-      
+
       if (imageData.length) {
         const link = imageData[0].text;
         const barcode = await Barcode.findOne({ link });
@@ -261,9 +324,9 @@ router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
         batch.map(async ({ barcode, file }) => {
           await uploadAndSave(barcode, file);
         })
-      );     
+      );
     }
-    console.log('uploaded barcode images to s3');
+    console.log("uploaded barcode images to s3");
     res.status(200).json({ message: "QR codes uploaded successfully" });
   } catch (error) {
     console.log("Error while scanning and uploading barCodes", error);
@@ -286,24 +349,33 @@ router.post("/assign/user", verifyUser, async (req, res) => {
 
     const user = await User.findById(value.user).lean();
     if (!user) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("User") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("User") });
     }
     const barcode = await Barcode.findById(value.link);
     if (!barcode) {
-      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("QR Code") });
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("QR Code") });
     }
 
     if (barcode.user || !barcode.approved || !barcode.isActive) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: RESPONSE_MESSAGES.BAD_REQUEST });
+      return res
+        .status(STATUS_CODES.BAD_REQUEST)
+        .json({ message: RESPONSE_MESSAGES.BAD_REQUEST });
     }
 
     barcode.user = user._id;
     await barcode.save();
-    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("QR Code") });
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated("QR Code") });
   } catch (error) {
-    console.log('Error while assigning user to link');
-    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
-
+    console.log("Error while assigning user to link");
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
 
