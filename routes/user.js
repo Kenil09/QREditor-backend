@@ -88,8 +88,7 @@ router.post("/login", function (req, res, next) {
       if (err) {
         return next(err);
       }
-      console.log("user => ", user);
-      return res.status(200).end();
+      return res.status(200).json({ user }).end();
       // return res.redirect(
       //   `${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`
       // );
