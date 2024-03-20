@@ -89,45 +89,61 @@ router.get("/user/:id", verifyUser, async (req, res) => {
   }
 });
 
-router.put('/:id', verifyUser, multer().any(), async (req, res) => {
+// Get barcode
+router.get('/qrcode/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const barcode = await Barcode.findById(id).lean();
+    if (!barcode) {
+      return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    }
+    return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.success("Barcode"), barcode });
+  } catch (error) {
+    console.log('Error while getting barcode', error.message);
+    return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+})
+
+// Update barcode info
+router.put('/:id', verifyUser, multer().single('file'), async (req, res) => {
   try {
     const id = req.params.id;
 
     const { error, value } = schema.validate(req.body);
     
     if (error) {
-      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: error.details[0].message });
+      return res.status(STATUS_CODES.BAD_REQUEST).json({ message: error.message });
     }
-
-    const params = value;
     let barcode = await Barcode.findById(id); // Retrieve barcode by ID
     
     if (!barcode) {
       return res.status(STATUS_CODES.NOT_FOUND).json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
     }
     
-    if (['image', 'pdf'].includes(params.type) && req.files.length > 0 && req.files[0].buffer) {
-      const file = req.files[0];
-      const imageOrPdfUrl = await upload(file?.buffer, file?.originalname, file?.mimetype);
+    if (['image', 'pdf'].includes(value.type) && req.file && req.file.buffer) {
+      const file = req.file;
+      const imageOrPdfUrl = await upload(file?.buffer, `/${id}/${file?.originalname}`, file?.mimetype);
+      if (!imageOrPdfUrl) {
+        return res.status(STATUS_CODES.INTERNAL_SERVER_ERROR).json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+      }
       barcode.storedInfo = {
-        infoType: params.type,
+        infoType: value.type,
         link: imageOrPdfUrl
       };
-    } else if(params.type === 'link') {
+    } else if(value.type === 'link') {
       barcode.storedInfo = {
         infoType: 'link',
-        link: params.link
+        link: value.link
       };
-    }else if(params.type === 'text') {
+    } else if(value.type === 'phoneNumber') {
       barcode.storedInfo = {
-        infoType: 'text',
-        link: params.link
+        infoType: 'phoneNumber',
+        link: value.phoneNumber
       };
     }
     
     await barcode.save(); // Save updated barcode
     
-    console.log('updated barcode');
     return res.status(STATUS_CODES.SUCCESS).json({ message: RESPONSE_MESSAGES.updated("Barcode"), barcode });
   } catch (error) {
     console.log('Error while updating barcode', error.message);

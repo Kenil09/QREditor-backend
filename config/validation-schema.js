@@ -26,7 +26,14 @@ export const assignLink = Joi.object({
 });
 
 export const schema =Joi.object({
-  name: Joi.string().required(),
-  link: Joi.string().required(),
-  type: Joi.string().valid('image', 'pdf', 'link', 'text').required(),
+  name: Joi.string().allow(''),
+  link: Joi.string().when('type', {
+    is: 'link',
+    then: Joi.string().required(),
+  }),
+  phoneNumber: Joi.string().when('type', {
+    is: 'phoneNumber',
+    then: Joi.string().required(),
+  }),
+  type: Joi.string().valid('image', 'pdf', 'link', 'phoneNumber').required(),
 })
