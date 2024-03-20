@@ -379,4 +379,41 @@ router.post("/assign/user", verifyUser, async (req, res) => {
   }
 });
 
+// Upload barcode image to the specific barcode and link it to the specific record
+router.post("/upload/:id", verifyAdmin, multer().single('image'), async (req, res) => {
+  try {
+    // get the file and id from the request
+    const file  = req.file;
+    const id = req.params.id;
+
+    // Upload the image to S3 and save the record
+    let barcode = await Barcode.findById(id);
+    if (!barcode) {
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    }
+
+    const url = await upload(file.buffer, file.originalname, file.mimetype);
+    if (url) {
+      barcode.imageLink = url;
+      await barcode.save();
+
+      console.log("uploaded barcode image to s3");
+      return res.status(200).json({ message: "QR code uploaded successfully" });
+    }
+
+    console.log("error in uploading barcode image to s3");
+    res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  } catch (error) {
+    console.log("Error while uploading barCode", error);
+    res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+
 export default router;
