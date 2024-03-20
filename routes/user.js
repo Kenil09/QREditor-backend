@@ -75,7 +75,6 @@ router.post("/login", function (req, res, next) {
     if (error) {
       return next(error);
     }
-    console.log("info and user", info, user);
     if (info && info?.message) {
       return res.status(400).json({ message: info.message });
     }

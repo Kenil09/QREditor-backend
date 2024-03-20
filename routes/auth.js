@@ -12,7 +12,6 @@ router.get(
   passport.authenticate('google', { failureRedirect: `${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_FAILURE_URL}` }),
   (req, res) => {
     if (req.isAuthenticated()) {
-      console.log('req on google => ', req.user);
       return res.redirect(`${env.FRONTEND_URL}/${env.FRONTEND_LOGIN_SUCCESS_URL}`);
     }
   }

@@ -386,6 +386,12 @@ router.post("/upload/:id", verifyAdmin, multer().single('image'), async (req, re
     const file  = req.file;
     const id = req.params.id;
 
+    if (!file) {
+      return res
+        .status(STATUS_CODES.BAD_REQUEST)
+        .json({ message: "No QR image found" });
+    }
+
     // Upload the image to S3 and save the record
     let barcode = await Barcode.findById(id);
     if (!barcode) {
