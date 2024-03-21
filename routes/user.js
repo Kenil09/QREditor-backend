@@ -1,12 +1,14 @@
 // create user register route
 import express from "express";
 import User from "../db/models/User.js";
-import { registerSchema, updateSchema } from "../config/validation-schema.js";
+import { registerSchema, resetPasswordValidation, updateSchema, verifyResetPasswordValidation } from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import { verifyAdmin } from "../middleware/auth.js";
 import passport from "passport";
 import Barcode from "../db/models/Barcode.js";
-import { comparePasswords } from "../utils/password.js";
+import { comparePasswords, createToken, decodeToken, hashPassword } from "../utils/cipher-service.js";
+import { sendMail } from "../service/email-service.js";
+import { passwordChangeNotification, passwordResetEmail } from "../utils/template.js";
 
 const router = express.Router();
 const env = process.env;
@@ -142,6 +144,100 @@ router.put("/update/:userId", async (req, res) => {
       .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
   }
 });
+
+// forgot-password
+router.post("/reset-password", async (req, res) => {
+  try{
+    const {value, error} = resetPasswordValidation.validate(req.body);
+    if (error) {
+      return res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: error.message });
+    }
+    const clientUrl = process?.env?.FRONTEND_URL
+
+    let { email } = value;
+    const user = await User.findOne({
+      email: email
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: RESPONSE_MESSAGES.not_found("User") });
+    }
+    
+    const token = createToken( { user_id: user._id, email }, "4h" );
+
+    const verificationLink = `${clientUrl}/reset?token=${token}`;
+
+    await sendMail(
+        [{ email, name: user.firstName + user.lastName }],
+        "We received a request to update your password",
+        passwordResetEmail(user, verificationLink)
+      );
+    res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.EMAIL_SEND_SUCCESSFULLY, user: user._id });
+  }  catch (error) {
+    console.error("Error reset password:", error);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+})
+
+router.post("/reset-password/verify", async (req, res) => {
+  try{
+    const {value, error} = verifyResetPasswordValidation.validate(req.body);
+
+    if (error) {
+      return res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: error.message });
+    }
+
+    const {token, password} = value;
+
+    const userDecode = await decodeToken(token)
+
+     if (!userDecode) {
+        return res
+          .status(400)
+          .send(
+            "Reset password link has already been used, please generate again."
+          );
+      }
+
+    const encryptedPassword = await hashPassword(password);
+
+    const user = await User.findByIdAndUpdate(
+        userDecode.user_id,
+        {
+          password: encryptedPassword,
+        },
+        { new: true }
+      );
+
+    if (!user) {
+      return res.status(404).json({ message: RESPONSE_MESSAGES.not_found("User") });
+    }
+
+      await sendMail(
+        [{ email: userDecode.email, name: user.firstName + user.lastName }],
+        "Your password was set",
+        passwordChangeNotification(user)
+      );
+
+    res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated('password'), user: user._id });
+  }  catch (error) {
+    console.error("Error reset password:", error);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+})
+
 
 
 export default router;

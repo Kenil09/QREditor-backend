@@ -72,6 +72,15 @@ router.get("/", verifyAdmin, async (req, res) => {
     if (query.isActive) {
       filter.isActive = query.isActive === "true" ? true : false;
     }
+    if (query?.startDate) {
+      const startDate = new Date(query?.startDate);
+      const endDate = query?.endDate ? new Date(query?.endDate) : new Date;
+      filter.imageUploadDate = {
+        $exists: true,
+        $gte: startDate,
+        $lte: endDate?.setHours(23, 59, 59),
+      };
+    }
 
     const barCodes = await Barcode.find(filter).limit(limit).skip(skip).lean();
 
@@ -127,6 +136,27 @@ router.get("/qrcode/:id", async (req, res) => {
       .json({ message: RESPONSE_MESSAGES.success("Barcode"), barcode });
   } catch (error) {
     console.log("Error while getting barcode", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// Delete barcode
+router.delete("/:id",verifyAdmin, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const barcode = await Barcode.findByIdAndDelete(id).lean();
+    if (!barcode) {
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    }
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.deleted("Barcode") });
+  } catch (error) {
+    console.log("Error while deleting barcode", error.message);
     return res
       .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
       .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
@@ -310,6 +340,7 @@ router.post("/upload", verifyAdmin, multer().any(), async (req, res) => {
     const uploadAndSave = async (barcode, file) => {
       const url = await upload(file.buffer, file.originalname, file.mimetype);
       barcode.imageLink = url;
+      barcode.imageUploadDate = new Date;
       await barcode.save();
     };
     if (barCodes.length === 0) {
@@ -403,6 +434,7 @@ router.post("/upload/:id", verifyAdmin, multer().single('image'), async (req, re
     const url = await upload(file.buffer, file.originalname, file.mimetype);
     if (url) {
       barcode.imageLink = url;
+      barcode.imageUploadDate = new Date;
       await barcode.save();
 
       console.log("uploaded barcode image to s3");

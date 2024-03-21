@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { hashPassword } from "../../utils/password.js";
+import { hashPassword } from "../../utils/cipher-service.js";
 
 const userSchema = new Schema(
   {

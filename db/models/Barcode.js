@@ -33,6 +33,9 @@ const barcodeSchema = new Schema(
       link: {
         type: String,
       },
+    },
+    imageUploadDate :{
+        type: Date
     }
   },
   {

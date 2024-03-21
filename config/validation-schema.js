@@ -37,3 +37,12 @@ export const schema =Joi.object({
   }),
   type: Joi.string().valid('image', 'pdf', 'link', 'phoneNumber').required(),
 })
+
+export const resetPasswordValidation = Joi.object({
+  email: Joi.string().trim().lowercase().email().required(),
+}).required();
+
+export const verifyResetPasswordValidation = Joi.object({
+  token: Joi.string().required(),
+  password : Joi.string().min(6)
+}).required();

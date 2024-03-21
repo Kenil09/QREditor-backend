@@ -31,4 +31,5 @@ export const RESPONSE_MESSAGES = {
   INTERNAL_SERVER_ERROR: "Internal Server Error",
   NOT_IMPLEMENTED: "Not Implemented",
   BARCODE_ALREADY_APPROVED: "Barcode already approved",
+  EMAIL_SEND_SUCCESSFULLY: "Email send successfully",
 };
