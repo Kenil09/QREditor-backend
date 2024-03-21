@@ -1,8 +1,8 @@
 import {SendMailClient} from 'zeptomail';
 
-const url = "api.zeptomail.com/";
+const url = process.env.MAIL_BASE_URL;
 
-const token = process.env.ZEPTO_TOKEN || 'Zoho-enczapikey wSsVR60g+UOmCKp7yTz8Irs+nFUGAQz3Q059jgShuX78HvzCpsc/kBCcVgH0GfYZGGRtFjUQoektyhkH1WFai4grzF4EWiiF9mqRe1U4J3x17qnvhDzIWGlVlheIK4sOwgxvkmNmFc4m+g==';
+const token = process.env.ZEPTO_TOKEN;
 
 export const sendMail = async (recipients = [], subject, body) => {
   let client = new SendMailClient({ url, token });
@@ -14,21 +14,14 @@ export const sendMail = async (recipients = [], subject, body) => {
   }));
   return client
     .sendMail({
-      bounce_address: "do-not-reply@bounce.churchofchristsingles.com",
+      bounce_address: process.env.BOUNCE_ADDRESS,
       from: {
-        address: "noreply@churchofchristsingles.com",
-        name: "QREditor.com",
+        address: process.env.NO_REPLAY_MAIL,
+        name: process.env.FROM_NAME,
       },
-      to: recips || [
-        {
-          email_address: {
-            address: "tarun02@yopmail.com",
-            name: "Tarun",
-          },
-        },
-      ],
-      subject: subject || "Test Email",
-      htmlbody: body || "<div><b> Test email sent successfully.</b></div>",
+      to: recips,
+      subject: subject,
+      htmlbody: body,
     })
     .then((resp) => console.log("success", resp))
     .catch((error) => console.log("error", error));

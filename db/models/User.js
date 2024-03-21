@@ -32,6 +32,18 @@ const userSchema = new Schema(
     userProviderId: {
       type: String,
     },
+    emailVerified: {
+      type: Boolean,
+      default: false
+    },
+    otpInfo: {
+      otp: {
+        type: String,
+      },
+      otpCreateDate:{
+        type: Date
+      }
+    }
   },
   {
     timestamps: true,

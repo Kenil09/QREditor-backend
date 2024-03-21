@@ -46,3 +46,11 @@ export const verifyResetPasswordValidation = Joi.object({
   token: Joi.string().required(),
   password : Joi.string().min(6)
 }).required();
+
+export const otpVerifyValidation = Joi.object({
+  email: Joi.string().trim().lowercase().email().required(),
+  otp:Joi.string()
+  .length(6)
+  .pattern(/^[0-9]+$/)
+  .required()
+}).required();

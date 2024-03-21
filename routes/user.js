@@ -1,14 +1,15 @@
 // create user register route
 import express from "express";
 import User from "../db/models/User.js";
-import { registerSchema, resetPasswordValidation, updateSchema, verifyResetPasswordValidation } from "../config/validation-schema.js";
+import { otpVerifyValidation, registerSchema, resetPasswordValidation, updateSchema, verifyResetPasswordValidation } from "../config/validation-schema.js";
 import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import { verifyAdmin } from "../middleware/auth.js";
 import passport from "passport";
 import Barcode from "../db/models/Barcode.js";
 import { comparePasswords, createToken, decodeToken, hashPassword } from "../utils/cipher-service.js";
 import { sendMail } from "../service/email-service.js";
-import { passwordChangeNotification, passwordResetEmail } from "../utils/template.js";
+import { passwordChangeNotification, passwordResetEmail, verifyEmail } from "../utils/template.js";
+import { generateOTP, validateOTP } from "../utils/common-function.js";
 
 const router = express.Router();
 const env = process.env;
@@ -22,8 +23,15 @@ router.post("/register", async (req, res) => {
         .status(STATUS_CODES.BAD_REQUEST)
         .json({ message: error.message });
     }
-
+    
     const user = new User({ ...value, provider: "local", role: "user" });
+    
+    const otp = generateOTP()
+    user.otpInfo = {
+      otp,
+      otpCreateDate : new Date
+    };
+
     await user.save();
 
     if (value.link) {
@@ -33,6 +41,13 @@ router.post("/register", async (req, res) => {
         await link.save();
       }
     }
+
+    await sendMail(
+      [{ email: value?.email, name: value.firstName + value.lastName }],
+        "Email verify OTP",
+        verifyEmail(value, otp)
+      );
+
     res
       .status(201)
       .json({ message: RESPONSE_MESSAGES.created("User"), user: user._id });
@@ -165,7 +180,7 @@ router.post("/reset-password", async (req, res) => {
       return res.status(404).json({ message: RESPONSE_MESSAGES.not_found("User") });
     }
     
-    const token = createToken( { user_id: user._id, email }, "4h" );
+    const token = createToken( { user_id: user._id, email }, "1h" );
 
     const verificationLink = `${clientUrl}/reset?token=${token}`;
 
@@ -230,6 +245,52 @@ router.post("/reset-password/verify", async (req, res) => {
     res
       .status(STATUS_CODES.SUCCESS)
       .json({ message: RESPONSE_MESSAGES.updated('password'), user: user._id });
+  }  catch (error) {
+    console.error("Error reset password:", error);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+})
+
+// email verify
+router.post("/otp-verify", async (req, res) => {
+  try{
+    const {value, error} = otpVerifyValidation.validate(req.body);
+    if (error) {
+      return res
+      .status(STATUS_CODES.BAD_REQUEST)
+      .json({ message: error.message });
+    }
+
+    let { email, otp } = value;
+    const user = await User.findOne({
+      email: email
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: RESPONSE_MESSAGES.not_found("User") });
+    }
+
+    if (user.emailVerified) {
+      return res.status(200).json({ message: RESPONSE_MESSAGES.EMAIL_ALREADY_VERIFIED });
+    }
+    
+    const isValid = validateOTP(user?.otpInfo?.otpCreateDate)
+    
+    if(!isValid){
+      return res.status(404).json({ message: RESPONSE_MESSAGES.OTP_IS_EXPIRED });
+    }
+    if(user?.otpInfo?.otp !== otp){
+      return res.status(404).json({ message: RESPONSE_MESSAGES.OTP_NOT_METCHED });
+    }
+
+    user.emailVerified = true;
+    user.save()
+
+    res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.EMAIL_VERIFIED_SUCCESSFULLY, user: user._id });
   }  catch (error) {
     console.error("Error reset password:", error);
     return res

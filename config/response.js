@@ -32,4 +32,8 @@ export const RESPONSE_MESSAGES = {
   NOT_IMPLEMENTED: "Not Implemented",
   BARCODE_ALREADY_APPROVED: "Barcode already approved",
   EMAIL_SEND_SUCCESSFULLY: "Email send successfully",
+  EMAIL_VERIFIED_SUCCESSFULLY: "Email verified successfully",
+  EMAIL_ALREADY_VERIFIED: "Email already verified",
+  OTP_NOT_METCHED: "otp not matched",
+  OTP_IS_EXPIRED: "otp is expired",
 };
