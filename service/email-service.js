@@ -1,10 +1,11 @@
 import {SendMailClient} from 'zeptomail';
 
-const url = process.env.MAIL_BASE_URL;
 
-const token = process.env.ZEPTO_TOKEN;
 
 export const sendMail = async (recipients = [], subject, body) => {
+  const url = process.env.MAIL_BASE_URL;
+
+const token = process.env.ZEPTO_TOKEN;
   let client = new SendMailClient({ url, token });
   const recips = recipients.map((r) => ({
     email_address: {
