@@ -36,6 +36,13 @@ const barcodeSchema = new Schema(
     },
     imageUploadDate :{
         type: Date
+    },
+    approvedDate :{
+      type: Date
+    },
+    scanCount:{
+      type:Number,
+      default:0
     }
   },
   {

@@ -68,6 +68,10 @@ router.get("/", verifyAdmin, async (req, res) => {
     }
     if (query.approved) {
       filter.approved = query.approved === "true" ? true : false;
+      filter.approvedDate = query.approved === "true" ? new Date : null;
+    }
+    if (query.approved === "true") {
+      filter.approvedDate = new Date 
     }
     if (query.isActive) {
       filter.isActive = query.isActive === "true" ? true : false;
@@ -115,6 +119,31 @@ router.get("/user/:id", verifyUser, async (req, res) => {
       .json({ message: RESPONSE_MESSAGES.success("Barcode List"), barcodes });
   } catch (error) {
     console.log("Error while getting barcode list", error.message);
+    return res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// Scanned barcode
+router.get("/scanned/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const barcode = await Barcode.findById(id).lean();
+    if (!barcode) {
+      return res
+        .status(STATUS_CODES.NOT_FOUND)
+        .json({ message: RESPONSE_MESSAGES.not_found("Barcode") });
+    }
+
+    const scanCount = (barcode.scanCount || 0) + 1;
+    await Barcode.findByIdAndUpdate(id, { scanCount }).lean();
+
+    return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.success("Barcode Scanned"), barcode });
+  } catch (error) {
+    console.log("Error while scanned count plus barcode", error.message);
     return res
       .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
       .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
@@ -292,6 +321,7 @@ router.put("/:id/approve", verifyAdmin, async (req, res) => {
         .json({ message: RESPONSE_MESSAGES.BARCODE_ALREADY_APPROVED });
     }
     barcode.approved = true;
+    barcode.approvedDate = new Date;
     await barcode.save();
     return res
       .status(STATUS_CODES.SUCCESS)
@@ -378,7 +408,7 @@ router.post("/assign/user", verifyUser, async (req, res) => {
         .json({ message: error.message });
     }
 
-    const user = await User.findById(value.user).lean();
+    const user = await User.findById(value.user);
     if (!user) {
       return res
         .status(STATUS_CODES.NOT_FOUND)
