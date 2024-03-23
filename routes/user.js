@@ -6,6 +6,7 @@ import { RESPONSE_MESSAGES, STATUS_CODES } from "../config/response.js";
 import { verifyAdmin } from "../middleware/auth.js";
 import passport from "passport";
 import Barcode from "../db/models/Barcode.js";
+import Setting from "../db/models/Setting.js";
 import { comparePasswords, createToken, decodeToken, hashPassword } from "../utils/cipher-service.js";
 import { sendMail } from "../service/email-service.js";
 import { passwordChangeNotification, passwordResetEmail, verifyEmail } from "../utils/template.js";
@@ -299,6 +300,48 @@ router.post("/otp-verify", async (req, res) => {
   }
 })
 
+// update advertisement text
+router.put("/update-text", verifyAdmin, async (req, res) => {
+  try {
+    const { topBannerText, bottomBannerText } = req.body;
+  
+    let bannerTexts = await Setting.find();
+
+     if (bannerTexts[0]) {
+        bannerTexts[0].topBannerText = topBannerText;
+        bannerTexts[0].bottomBannerText = bottomBannerText;
+        await bannerTexts[0].save();
+
+       return res
+      .status(STATUS_CODES.SUCCESS)
+      .json({ message: RESPONSE_MESSAGES.updated("text")});
+    }
+  
+  } catch (error) {
+    console.log("error updating text", error.message);
+    res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
+
+// get advertisement text
+router.get("/get-text", async (req, res) => {
+  try {
+  
+    let bannerTexts = await Setting.find();
+
+     if (bannerTexts[0]) {
+      return res.status(200).json({ bannerTexts });
+    }
+  
+  } catch (error) {
+    console.log("error updating text", error.message);
+    res
+      .status(STATUS_CODES.INTERNAL_SERVER_ERROR)
+      .json({ message: RESPONSE_MESSAGES.INTERNAL_SERVER_ERROR });
+  }
+});
 
 
 export default router;
