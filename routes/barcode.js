@@ -86,7 +86,7 @@ router.get("/", verifyAdmin, async (req, res) => {
       };
     }
 
-    const barCodes = await Barcode.find(filter).limit(limit).skip(skip).lean();
+    const barCodes = await Barcode.find(filter).sort({ createdAt: -1 }).limit(limit).skip(skip).populate('user').lean();
 
     // Get count of total barcode
     const totalBarcodes = await Barcode.countDocuments(filter);

@@ -303,13 +303,14 @@ router.post("/otp-verify", async (req, res) => {
 // update advertisement text
 router.put("/update-text", verifyAdmin, async (req, res) => {
   try {
-    const { topBannerText, bottomBannerText } = req.body;
+    const { topBannerText, bottomBannerText, sideBannerText } = req.body;
   
     let bannerTexts = await Setting.find();
 
      if (bannerTexts[0]) {
         bannerTexts[0].topBannerText = topBannerText;
         bannerTexts[0].bottomBannerText = bottomBannerText;
+        bannerTexts[0].sideBannerText = sideBannerText;
         await bannerTexts[0].save();
 
        return res

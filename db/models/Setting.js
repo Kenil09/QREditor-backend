@@ -8,6 +8,9 @@ const settingSchema = new Schema(
     bottomBannerText: {
       type: String,
     },
+    sideBannerText: {
+      type: String,
+    },
   },
   {
     timestamps: true,
