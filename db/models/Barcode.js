@@ -23,7 +23,7 @@ const barcodeSchema = new Schema(
     },
     isActive: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     storedInfo: {
       infoType: {
