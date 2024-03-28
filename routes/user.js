@@ -27,11 +27,11 @@ router.post("/register", async (req, res) => {
     
     const user = new User({ ...value, provider: "local", role: "user" });
     
-    const otp = generateOTP()
-    user.otpInfo = {
-      otp,
-      otpCreateDate : new Date
-    };
+    // const otp = generateOTP()
+    // user.otpInfo = {
+    //   otp,
+    //   otpCreateDate : new Date
+    // };
 
     await user.save();
 
@@ -43,11 +43,11 @@ router.post("/register", async (req, res) => {
       }
     }
 
-    await sendMail(
-      [{ email: value?.email, name: value.firstName + value.lastName }],
-        "Email verify OTP",
-        verifyEmail(value, otp)
-      );
+    // await sendMail(
+    //   [{ email: value?.email, name: value.firstName + value.lastName }],
+    //     "Email verify OTP",
+    //     verifyEmail(value, otp)
+    //   );
 
     res
       .status(201)
