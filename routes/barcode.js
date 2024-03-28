@@ -68,10 +68,7 @@ router.get("/", verifyAdmin, async (req, res) => {
     }
     if (query.approved) {
       filter.approved = query.approved === "true" ? true : false;
-      filter.approvedDate = query.approved === "true" ? new Date : null;
-    }
-    if (query.approved === "true") {
-      filter.approvedDate = new Date 
+      // filter.approvedDate = query.approved === "true" ? new Date : null;
     }
     if (query.isActive) {
       filter.isActive = query.isActive === "true" ? true : false;
@@ -240,6 +237,9 @@ router.put("/:id", verifyUser, multer().single("file"), async (req, res) => {
       };
     }
 
+    if (value.name) {
+      barcode.name = value.name;
+    }
     await barcode.save(); // Save updated barcode
 
     return res
